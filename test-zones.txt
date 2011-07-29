@@ -1,0 +1,14 @@
+gov
+berkeley.edu
+harvard.edu
+9-11commission.gov
+ada.gov
+dhs.gov
+nist.gov
+apple.com
+google.com 
+microsoft.com
+yahoo.com
+hp.com
+obscure.org
+linux.org
