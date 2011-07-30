@@ -3,9 +3,13 @@ DNSSECListWalk
 
 **DNSSECListWalk** takes a list of domains and determines their DNSSEC status.
 
-This 
+History
+=======
 
-The original script was from Scott Rose, NIST
+The original script was written by Scott Rose of NIST.
+Richard Bullington-McGuire <rbullington-mcguire@bstonetech.com>, 
+also known as @obscurerichard, adapted it for release at the 2011 1.USA.gov 
+Hack Day on July 29, 2011.
 
 Licence
 =======
