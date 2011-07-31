@@ -10,7 +10,16 @@
 #   by
 #   Richard Bullington-McGuire <rbullington-mcguire@bstonetech.com>
 #   7/29/2011
+
+# This script originally used the Net::DNS::Senamdil module, but it is not in CPAN,
+# and the only description of it out there on Softpedia
+# http://linux.softpedia.com/get/Programming/Libraries/Net-DNS-Sendmail-21423.shtml
+# does not lead to a real download of it.
+# So instead of using that, we use the more standard Mail::Sendmail module.
+# Sending email directly to recipients SMTP servers tends to be buggy, anyway,
+# in this age of spammers, whitelists, SPF records, and such.
 #use Net::DNS::Sendmail;
+
 use Mail::Sendmail;
 use Net::DNS;
 use Net::DNS::SEC;
@@ -61,7 +70,7 @@ print OUTPUT ("usually the top-level TLD or a second-level.</p>");
 print OUTPUT ("<p><b>NOTE:</b> zones that are no longer present are the zones with <b>\"Error\"</b> in the last column.</p>");
 print OUTPUT ("<p>Time: " . localtime() . "</p>");
 print OUTPUT ("<TABLE BORDER=\"4\" CELLSPACING=\"4\" CELLPADDING=\"5\"> \n");
-print OUTPUT ("<CAPTION>SNIP Zone Status</CAPTION>");
+print OUTPUT ("<CAPTION>Zone Status</CAPTION>");
 print OUTPUT ("<TR> <TD ALIGN = \"center\"> Zonename </TD> \n");
 print OUTPUT ("<TD ALIGN = \"center\"> Signed? </TD> \n");
 print OUTPUT ("<TD ALIGN = \"center\"> Status </TD> \n");
