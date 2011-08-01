@@ -26,6 +26,8 @@ use Net::DNS::SEC;
 use Net::DNS::Resolver;
 use Net::DNS::RR::DS;
 use Time::Local;
+use JSON::PP;
+use Getopt::Long;
 
 $name;
 @line; 
@@ -40,17 +42,44 @@ $errINCEPT = 0;
 $errBADROLL = 0;
 $errDSPREPUB = 0;
 $errOTHER = 0;
-$delFile = $ARGV[0];
+$delFile = $ARGS[0];
 @problemzones;
 @islands;
 @problems;
 $p = -1;
 $is = -1;
+
+my ($help, $zoneFile, $activityFile, @activity);
+
+usage() if ( !  GetOptions(
+	'help|?' => \$help, 
+	'zonefile=s' => \$zoneFile, 
+	'activityfile=s' =>\$activityFile)
+		or defined $help );
+
+$zoneFile = "test-zones.txt" unless defined $zoneFile;
+
+sub usage {
+	print "Unknown option: @_\n" if ( @_ );
+	print "usage: DNSSECListWalk.pl [--zone-file FILE] [--activity-file FILE] [--help|-?]\n";
+	exit 0;
+}
+
 #declare some variables now
 my $recipient = "bob\@example.com";
 my $sender = "alice\@example.net";
 
-open(LIST, "test-zones.txt") || die "Cannot open delegation request";
+my ($activityData, %globalClicks);
+if (defined $activityFile) {
+	my $activity= do { local( @ARGV, $/ ) = $activityFile ; <> } ;
+	$activityData = decode_json($activity);
+    #print "$activityData->[0]{'agency'}\t$activityData->[0]{'global_clicks'}\n";
+	foreach my $click (@$activityData) {
+		$globalClicks{$$click{'agency'}} = $$click{'global_clicks'};
+	}
+}
+
+open(LIST, $zoneFile) || die "Cannot open zone input file";
 open(OUTPUT, ">DNSSECListStatus.html") || die "Cannot open output file";
 
 
@@ -72,6 +101,7 @@ print OUTPUT ("<p>Time: " . localtime() . "</p>");
 print OUTPUT ("<TABLE BORDER=\"4\" CELLSPACING=\"4\" CELLPADDING=\"5\"> \n");
 print OUTPUT ("<CAPTION>Zone Status</CAPTION>");
 print OUTPUT ("<TR> <TD ALIGN = \"center\"> Zonename </TD> \n");
+print OUTPUT ("<TD ALIGN = \"center\"> Site Visits </TD> \n") if defined %globalClicks;
 print OUTPUT ("<TD ALIGN = \"center\"> Signed? </TD> \n");
 print OUTPUT ("<TD ALIGN = \"center\"> Status </TD> \n");
 print OUTPUT ("<TD ALIGN = \"center\"> Island or Chain? </TD> \n");
@@ -88,6 +118,7 @@ while (<LIST>) {
 	$valid = 0;
 
 	print OUTPUT ("<TR> <TD> " . @line[0] . "</TD> ");
+    print OUTPUT ("<TD ALIGN = \"right\">$globalClicks{$line[0]}</FONT> </TD> \n") if defined %globalClicks;
 	#DNSKEY query for signed/unsigned	
 	$testRes->dnssec(1);
 	$reply = $testRes->send(@line[0], 'DNSKEY');
@@ -280,5 +311,4 @@ sub what_happened() {
 	$errOTHER++;
 	return "Some other strange error occurred";				
 }
-
 
