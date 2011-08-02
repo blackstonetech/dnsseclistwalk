@@ -11,23 +11,27 @@
 #   Richard Bullington-McGuire <rbullington-mcguire@bstonetech.com>
 #   7/29/2011
 
-# This script originally used the Net::DNS::Senamdil module, but it is not in CPAN,
+# This script originally used the Net::DNS::Sendmail module, but it is not in CPAN,
 # and the only description of it out there on Softpedia
 # http://linux.softpedia.com/get/Programming/Libraries/Net-DNS-Sendmail-21423.shtml
 # does not lead to a real download of it.
-# So instead of using that, we use the more standard Mail::Sendmail module.
+# So instead of using that, we use the more standard Email::Sender module.
 # Sending email directly to recipients SMTP servers tends to be buggy, anyway,
 # in this age of spammers, whitelists, SPF records, and such.
 #use Net::DNS::Sendmail;
 
-use Mail::Sendmail;
+
+#use strict;
+use Email::Sender::Simple qw(sendmail);
+use Email::Simple;
+use Email::Simple::Creator;
+use Getopt::Long;
+use JSON::PP;
 use Net::DNS;
-use Net::DNS::SEC;
 use Net::DNS::Resolver;
 use Net::DNS::RR::DS;
+use Net::DNS::SEC;
 use Time::Local;
-use JSON::PP;
-use Getopt::Long;
 
 $name;
 @line; 
@@ -49,25 +53,26 @@ $delFile = $ARGS[0];
 $p = -1;
 $is = -1;
 
-my ($help, $zoneFile, $activityFile, @activity);
+my ($help, $sender, $recipient, $zoneFile, $activityFile, @activity);
 
 usage() if ( !  GetOptions(
 	'help|?' => \$help, 
+	'sender=s' => \$sender, 
+	'recipient=s' => \$recipient, 
 	'zonefile=s' => \$zoneFile, 
 	'activityfile=s' =>\$activityFile)
 		or defined $help );
 
-$zoneFile = "test-zones.txt" unless defined $zoneFile;
-
 sub usage {
 	print "Unknown option: @_\n" if ( @_ );
-	print "usage: DNSSECListWalk.pl [--zone-file FILE] [--activity-file FILE] [--help|-?]\n";
+	print "usage: DNSSECListWalk.pl [--zone-file FILE] \n\t[--activity-file FILE] [-sender EMAIL] [-recipient EMAIL] [--help|-?]\n";
 	exit 0;
 }
 
 #declare some variables now
-my $recipient = "bob\@example.com";
-my $sender = "alice\@example.net";
+$zoneFile = "test-zones.txt" unless defined $zoneFile;
+$recipient = "bob\@example.com" unless defined $recipient;
+$sender = "alice\@example.net" unless defined $sender;
 
 my ($activityData, %globalClicks);
 if (defined $activityFile) {
@@ -214,19 +219,23 @@ print OUTPUT ("<BR></P></BODY></HTML>\n");
 
 #now send a report to admin
 if ($p > 0) {
-	#my $smtp = Net::DNS::Sendmail->new();
-	my $smtp = Mail::Sendmail->new();
-	$smtp->to( $recipient );
-	$smtp->from( $sender );
-	$smtp->subject( "Today's DNSSEC FAIL\n");
-	$smtp->data($p . " zones with potential problems:\n");
+	my $body = "$p zones with potential problems:\n";
 	for ($i=0; $i<$p; $i++) {
-		$smtp->data(@problemzones[$i] . " " . @problems[$i] . "\n");
+		$body .= @problemzones[$i] . " " . @problems[$i] . "\n";
 	}
 	#now put in the totals of errors
-	$smtp->data("==============================\n\n");
-	$smtp->data($errNOSIG . "\t" . $errEXPIRED . "\t" . $errINCEPT . "\t" . $errBADROLL . "\t" . $errDSPREPUB . "\t" . $errOTHER . "\n");
-	$smtp->sendmail();
+	$body .= "==============================\n\n";
+	$body .= $errNOSIG . "\t" . $errEXPIRED . "\t" . $errINCEPT . "\t" . $errBADROLL . "\t" . $errDSPREPUB . "\t" . $errOTHER . "\n";
+
+	my $email = Email::Simple->create(
+		header => [
+			From =>  $sender,
+			To => $recipient,
+			Subject => "Today's DNSSEC FAIL",
+		],
+		body => $body,
+	);
+	sendmail($email);
 }
 
 

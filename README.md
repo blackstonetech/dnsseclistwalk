@@ -16,7 +16,8 @@ Environment
 
 This script requires Perl 5 and two Perl modules from CPAN [1]: 
 
-* Mail::Sendmail
+* Email::Simple
+* Email::Sender
 * Net::DNS
 
 You may install those into your system Perl installation using CPAN [1], or do use
