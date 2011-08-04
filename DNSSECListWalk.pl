@@ -40,6 +40,7 @@ $valid;
 $numValid = 0;
 $numChained = 0;
 $numSigned = 0;
+$numVisits = 0;
 $errNOSIG = 0;
 $errEXPIRED = 0;
 $errINCEPT = 0;
@@ -78,9 +79,10 @@ my ($activityData, %globalClicks);
 if (defined $activityFile) {
 	my $activity= do { local( @ARGV, $/ ) = $activityFile ; <> } ;
 	$activityData = decode_json($activity);
-    #print "$activityData->[0]{'agency'}\t$activityData->[0]{'global_clicks'}\n";
+	#print "$activityData->[0]{'agency'}\t$activityData->[0]{'global_clicks'}\n";
 	foreach my $click (@$activityData) {
 		$globalClicks{$$click{'agency'}} = $$click{'global_clicks'};
+		#print "click $click a $$click{'agency'} g $$click{'global_clicks'} gc $globalClicks{$$click{'agency'}}\n"
 	}
 }
 
@@ -123,7 +125,8 @@ while (<LIST>) {
 	$valid = 0;
 
 	print OUTPUT ("<TR> <TD> " . @line[0] . "</TD> ");
-    print OUTPUT ("<TD ALIGN = \"right\">$globalClicks{$line[0]}</FONT> </TD> \n") if defined %globalClicks;
+    print OUTPUT ("<TD ALIGN = \"right\">$globalClicks{@line[0]}</FONT> </TD> \n") if defined %globalClicks;
+	$numVisits += $globalClicks{@line[0]} if defined %globalClicks;
 	#DNSKEY query for signed/unsigned	
 	$testRes->dnssec(1);
 	$reply = $testRes->send(@line[0], 'DNSKEY');
@@ -210,6 +213,7 @@ while (<LIST>) {
 }
 
 	print OUTPUT ("<TR><TD ALIGN=\"center\"><b>Totals:</b></TD>");
+	print OUTPUT ("<TD ALIGN = \"center\">" . $numVisits . " </TD> \n") if defined %globalClicks;
 	print OUTPUT ("<TD ALIGN=\"center\">" . $numSigned . "</TD>");
 	print OUTPUT ("<TD ALIGN=\"center\">" . $numValid . "</TD>");
 	print OUTPUT ("<TD ALIGN=\"center\">" . $numChained . "</TD>");
