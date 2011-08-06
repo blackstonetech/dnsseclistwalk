@@ -21,7 +21,7 @@
 #use Net::DNS::Sendmail;
 
 
-#use strict;
+use strict;
 use Email::Sender::Simple qw(sendmail);
 use Email::Simple;
 use Email::Simple::Creator;
@@ -33,26 +33,25 @@ use Net::DNS::RR::DS;
 use Net::DNS::SEC;
 use Time::Local;
 
-$name;
-@line; 
-$signed;
-$valid;
-$numValid = 0;
-$numChained = 0;
-$numSigned = 0;
-$numVisits = 0;
-$errNOSIG = 0;
-$errEXPIRED = 0;
-$errINCEPT = 0;
-$errBADROLL = 0;
-$errDSPREPUB = 0;
-$errOTHER = 0;
-$delFile = $ARGS[0];
-@problemzones;
-@islands;
-@problems;
-$p = -1;
-$is = -1;
+my $name;
+my @line; 
+my $signed;
+my $valid;
+my $numValid = 0;
+my $numChained = 0;
+my $numSigned = 0;
+my $numVisits = 0;
+my $errNOSIG = 0;
+my $errEXPIRED = 0;
+my $errINCEPT = 0;
+my $errBADROLL = 0;
+my $errDSPREPUB = 0;
+my $errOTHER = 0;
+my @problemzones;
+my @islands;
+my @problems;
+my $p = -1;
+my $is = -1;
 
 my ($help, $sender, $recipient, $zoneFile, $activityFile, @activity);
 
@@ -108,7 +107,7 @@ print OUTPUT ("<p>Time: " . localtime() . "</p>");
 print OUTPUT ("<TABLE BORDER=\"4\" CELLSPACING=\"4\" CELLPADDING=\"5\"> \n");
 print OUTPUT ("<CAPTION>Zone Status</CAPTION>");
 print OUTPUT ("<TR> <TD ALIGN = \"center\"> Zonename </TD> \n");
-print OUTPUT ("<TD ALIGN = \"center\"> Site Visits </TD> \n") if defined %globalClicks;
+print OUTPUT ("<TD ALIGN = \"center\"> Site Visits </TD> \n") if %globalClicks;
 print OUTPUT ("<TD ALIGN = \"center\"> Signed? </TD> \n");
 print OUTPUT ("<TD ALIGN = \"center\"> Status </TD> \n");
 print OUTPUT ("<TD ALIGN = \"center\"> Island or Chain? </TD> \n");
@@ -116,25 +115,25 @@ print OUTPUT ("<TD ALIGN = \"center\"> Island or Chain? </TD> \n");
 print OUTPUT ("</TR> \n");
 
 while (<LIST>) {
-	@line = split(/\t/, $_);
+	my ($zone) = split(/\t/, $_);
 	my $reply = Net::DNS::Packet->new(); 
 
 	sleep(2);
-	$zname = chomp(@line[0]);
+	my $zname = chomp($zone);
 	$signed = 0;
 	$valid = 0;
 
-	print OUTPUT ("<TR> <TD> " . @line[0] . "</TD> ");
-    print OUTPUT ("<TD ALIGN = \"right\">$globalClicks{@line[0]}</FONT> </TD> \n") if defined %globalClicks;
-	$numVisits += $globalClicks{@line[0]} if defined %globalClicks;
+	print OUTPUT ("<TR> <TD> " . $zone . "</TD> ");
+    print OUTPUT ("<TD ALIGN = \"right\">$globalClicks{$zone}</FONT> </TD> \n") if %globalClicks;
+	$numVisits += $globalClicks{$zone} if %globalClicks;
 	#DNSKEY query for signed/unsigned	
 	$testRes->dnssec(1);
-	$reply = $testRes->send(@line[0], 'DNSKEY');
+	$reply = $testRes->send($zone, 'DNSKEY');
 	if ($reply ne undef) {
 		my $header = Net::DNS::Header->new;
 		$header = $reply->header;
 		if ($header->rcode eq "NOERROR") {
-			$ansSec = $header->ancount;
+			my $ansSec = $header->ancount;
 			if ($ansSec > 0) {
 				$signed = 1;
 				$valid = 1;
@@ -145,13 +144,13 @@ while (<LIST>) {
 			}
 		} elsif ($header->rcode eq "SERVFAIL") {
 			$testRes->cdflag(1);
-			@problemzones[++$p] = @line[0];
-			$reply = $testRes->send(@line[0], 'DNSKEY');	
+			@problemzones[++$p] = $zone;
+			$reply = $testRes->send($zone, 'DNSKEY');	
 				if ($reply ne undef) {
 					my $headerv = Net::DNS::Header->new;
 					$headerv = $reply->header;
 					if ($headerv->rcode eq "NOERROR") {
-						$ansSec = $headerv->ancount;
+						my $ansSec = $headerv->ancount;
 						if ($ansSec > 0) {
 							$signed = 1;
 							$valid = 0;
@@ -161,7 +160,7 @@ while (<LIST>) {
 							$valid = 0;
 						}
 					}
-					@problems[$p] = what_happened($reply);
+					@problems[$p] = what_happened($reply, $zone);
 				}
 		} 
 	} else {
@@ -175,7 +174,7 @@ while (<LIST>) {
 		if ($valid eq 1) {
 			print OUTPUT ("<TD ALIGN = \"center\"BGCOLOR=\"#008000\"><FONT COLOR=\"#FFFFFF\">Valid</FONT> </TD> \n");
 		} else {
-			print OUTPUT ("<TD ALIGN = \"center\"BGCOLOR=\"#FF0000\"><FONT COLOR=\"#FFFFFF\"><a href=\"http://dnsviz.net/search/?d=" . @line[0] . "\">Error</a></FONT> </TD> \n");
+			print OUTPUT ("<TD ALIGN = \"center\"BGCOLOR=\"#FF0000\"><FONT COLOR=\"#FFFFFF\"><a href=\"http://dnsviz.net/search/?d=" . $zone . "\">Error</a></FONT> </TD> \n");
 		}
 	} else {
 		print OUTPUT ("<TD ALIGN = \"center\" BGCOLOR=\"#FF0000\"><FONT COLOR=\"#FFFFFF\">Unsigned</FONT> </TD> \n");
@@ -183,15 +182,15 @@ while (<LIST>) {
 	}
 	
 	#Test for Chain/Island
-	$reply = $testRes->send(@line[0], 'DS');
+	$reply = $testRes->send($zone, 'DS');
 	if ($reply ne undef) {
 		my $headerc = Net::DNS::Header->new;
 		$headerc = $reply->header;
 		if ($headerc->rcode eq "NOERROR") {
-			$ansSec = $headerc->ancount;
+			my $ansSec = $headerc->ancount;
 			if ($ansSec > 0) {
 				print OUTPUT ("<TD ALIGN = \"center\"BGCOLOR=\"#008000\"><FONT COLOR=\"#FFFFFF\">Chain</FONT> </TD> \n");
-				@islands[++$is] = @line[0];
+				@islands[++$is] = $zone;
 				$numChained++;
 			}  else {
 				if ($signed == 1) {
@@ -213,7 +212,7 @@ while (<LIST>) {
 }
 
 	print OUTPUT ("<TR><TD ALIGN=\"center\"><b>Totals:</b></TD>");
-	print OUTPUT ("<TD ALIGN = \"center\">" . $numVisits . " </TD> \n") if defined %globalClicks;
+	print OUTPUT ("<TD ALIGN = \"center\">" . $numVisits . " </TD> \n") if %globalClicks;
 	print OUTPUT ("<TD ALIGN=\"center\">" . $numSigned . "</TD>");
 	print OUTPUT ("<TD ALIGN=\"center\">" . $numValid . "</TD>");
 	print OUTPUT ("<TD ALIGN=\"center\">" . $numChained . "</TD>");
@@ -224,7 +223,7 @@ print OUTPUT ("<BR></P></BODY></HTML>\n");
 #now send a report to admin
 if ($p > 0) {
 	my $body = "$p zones with potential problems:\n";
-	for ($i=0; $i<$p; $i++) {
+	for (my $i=0; $i<$p; $i++) {
 		$body .= @problemzones[$i] . " " . @problems[$i] . "\n";
 	}
 	#now put in the totals of errors
@@ -244,11 +243,11 @@ if ($p > 0) {
 
 
 sub what_happened() {
-	my ($resp) = @_;
+	my ($resp, $zone) = @_;
 	my $sigExpire;
 	my $sigIncep;
 	my @keyRRs;
-	@keyResp = $resp->answer;
+	my @keyResp = $resp->answer;
 #get the keys in a separate array and its signature's expiration
 	my @inct=gmtime(time);
 	my $foundSIG = 0;
@@ -259,8 +258,8 @@ sub what_happened() {
 	my $header = Net::DNS::Header->new;
 		$header = $resp->header; 
 	if ($header->rcode eq "NOERROR") {
-		foreach $respAns (@keyResp) {
-			$theType = $respAns->type;
+		foreach my $respAns (@keyResp) {
+			my $theType = $respAns->type;
 			if ($theType eq "DNSKEY") {
 				@keyRRs[++$#keyRRs] = $respAns;
 			} elsif ($theType eq "RRSIG") {
@@ -282,25 +281,25 @@ sub what_happened() {
 		}
 		
 		#get the DS RR
-		$DSreply = $testRes->send(@line[0], 'DS');
+		my $DSreply = $testRes->send($zone, 'DS');
 		if ($DSreply ne undef) {
 			my $headerc = Net::DNS::Header->new;
 			$headerc = $DSreply->header;
 			if ($headerc->rcode eq "NOERROR") {
-				@ansSec = $DSreply->answer;
-				$match = 0;
-				$inuse = 0;					
-				foreach $ansRR (@ansSec) {
+				my @ansSec = $DSreply->answer;
+				my $match = 0;
+				my $inuse = 0;					
+				foreach my $ansRR (@ansSec) {
 					my $theT = $ansRR->type;
 					if ($theT eq "DS") {
 						my $DSRR = $ansRR;
 						my $DSkeytag = $ansRR->keytag;
-						foreach $aK (@keyRRs) {
+						foreach my $aK (@keyRRs) {
 							if (($aK->keytag) eq $DSkeytag) {
 								$match = 1;
 								#now make sure it's not the pre-published one
-								foreach $respAns (@keyResp) {
-									$theType = $respAns->type;
+								foreach my $respAns (@keyResp) {
+									my $theType = $respAns->type;
 									if ($theType eq "RRSIG") {
 										if (($respAns->keytag) eq $DSkeytag) {
 											$inuse = 1;
