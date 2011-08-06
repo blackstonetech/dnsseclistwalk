@@ -118,7 +118,6 @@ while (<LIST>) {
 	my ($zone) = split(/\t/, $_);
 	my $reply = Net::DNS::Packet->new(); 
 
-	sleep(2);
 	my $zname = chomp($zone);
 	$signed = 0;
 	$valid = 0;
