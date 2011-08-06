@@ -14,18 +14,18 @@ Hack Day on July 29, 2011.
 Environment
 ===========
 
-This script requires Perl 5 and two Perl modules from CPAN [1]: 
+This script requires Perl 5 and a few Perl modules from CPAN [1]: 
 
 * Email::Simple
 * Email::Sender
 * Net::DNS
 
-You may install those into your system Perl installation using CPAN [1], or do use
+You may install those into your system Perl installation using CPAN [1], or use
 local::lib [2] and cpanminus [3] to install those into a non-root user
 directory, as current Perl best practices [4] suggest. If you have cpanminus
 installed you need only issue this command:
 
-    cpanm Mail::Sendmail Net::DNS
+    cpanm Email::Sender Net::DNS
 
 See one of the many tutorial introductions to installing Perl modules as
 a non-root user [5] [6] for more information on setting this up.
