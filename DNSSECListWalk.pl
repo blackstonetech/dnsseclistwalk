@@ -140,26 +140,43 @@ sub what_happened($$$$) {
 }
 
 sub parseOptions() {
-	my ($help, $sender, $recipient, $zoneFile, $activityFile);
+	my ($help, $sender, $recipient, $zoneFile, $activityFile, $outputFile);
 
 	usage() if ( !  GetOptions(
 		'help|?' => \$help, 
 		'sender=s' => \$sender, 
 		'recipient=s' => \$recipient, 
 		'zonefile=s' => \$zoneFile, 
-		'activityfile=s' =>\$activityFile)
+		'activityfile=s' =>\$activityFile, 
+		'outputFile=s' =>\$outputFile)
 			or defined $help );
 
 	sub usage {
 		print "Unknown option: @_\n" if ( @_ );
-		print "usage: DNSSECListWalk.pl [--zone-file FILE] \n\t[--activity-file FILE] [-sender EMAIL] [-recipient EMAIL] [--help|-?]\n";
+		print "usage: DNSSECListWalk.pl [--zone-file FILE] \n\t[--activity-file FILE] [--output-file FILE] [-sender EMAIL] [-recipient EMAIL] [--help|-?]\n";
 		exit 0;
 	}
 
 	$zoneFile = "test-zones.txt" unless defined $zoneFile;
 	$recipient = "bob\@example.com" unless defined $recipient;
 	$sender = "alice\@example.net" unless defined $sender;
-	return ($help, $sender, $recipient, $zoneFile, $activityFile);
+	$outputFile = "DNSSECListStatus.html" unless defined $outputFile;
+	return ($help, $sender, $recipient, $zoneFile, $activityFile, $outputFile);
+}
+
+sub getGlobalClicks($) {
+	my ($activityFile) = @_;
+	my $globalClicks;
+	if (defined $activityFile) {
+		my $activity= do { local( @ARGV, $/ ) = $activityFile ; <> } ;
+		my $activityData = decode_json($activity);
+		$globalClicks = {};
+		foreach my $click (@$activityData) {
+			$$globalClicks{$$click{'agency'}} = $$click{'global_clicks'};
+			#print "click $click a $$click{'agency'} g $$click{'global_clicks'} gc $$globalClicks{$$click{'agency'}}\n"
+		}
+	}
+	return ($globalClicks);
 }
 
 sub main() {
@@ -183,22 +200,13 @@ sub main() {
 	my $p = -1;
 	my $is = -1;
 
-	my ($help, $sender, $recipient, $zoneFile, $activityFile) = parseOptions();
+	my ($help, $sender, $recipient, $zoneFile, $activityFile, $outputFile) = parseOptions();
 
 
-	my ($activityData, $globalClicks);
-	if (defined $activityFile) {
-		my $activity= do { local( @ARGV, $/ ) = $activityFile ; <> } ;
-		$activityData = decode_json($activity);
-		$globalClicks = {};
-		foreach my $click (@$activityData) {
-			$$globalClicks{$$click{'agency'}} = $$click{'global_clicks'};
-			#print "click $click a $$click{'agency'} g $$click{'global_clicks'} gc $$globalClicks{$$click{'agency'}}\n"
-		}
-	}
+	my ($globalClicks) = getGlobalClicks($activityFile);
 
 	open(LIST, $zoneFile) || die "Cannot open zone input file";
-	open(OUTPUT, ">DNSSECListStatus.html") || die "Cannot open output file";
+	open(OUTPUT, ">$outputFile") || die "Cannot open output file";
 
 	my $testRes = Net::DNS::Resolver->new();
 
