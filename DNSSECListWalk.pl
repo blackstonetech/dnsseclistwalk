@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl -w
 
 # The original script was a U.S. Government work and is such
 # noncopyrighted, see: 
@@ -33,6 +33,10 @@ use Net::DNS::RR::DS;
 use Net::DNS::SEC;
 use Time::Local;
 
+sub what_happened($$$$);
+sub send_report($$$$$$);
+
+sub main() {
 my $name;
 my @line; 
 my $signed;
@@ -41,12 +45,14 @@ my $numValid = 0;
 my $numChained = 0;
 my $numSigned = 0;
 my $numVisits = 0;
-my $errNOSIG = 0;
-my $errEXPIRED = 0;
-my $errINCEPT = 0;
-my $errBADROLL = 0;
-my $errDSPREPUB = 0;
-my $errOTHER = 0;
+my $totalErr = { 
+	'NOSIG' => 0,
+	'EXPIRED' => 0,
+	'INCEPT' => 0,
+	'BADROLL' => 0,
+	'DSPREPUB' => 0,
+	'OTHER' => 0,
+};
 my @problemzones;
 my @islands;
 my @problems;
@@ -114,17 +120,17 @@ print OUTPUT ("<TD ALIGN = \"center\"> Island or Chain? </TD> \n");
 #print OUTPUT ("<TD ALIGN = \"center\"> PMTU Report </TD> \n");
 print OUTPUT ("</TR> \n");
 
+
 while (<LIST>) {
 	my ($zone) = split(/\t/, $_);
 	my $reply = Net::DNS::Packet->new(); 
 
-	my $zname = chomp($zone);
-	$signed = 0;
-	$valid = 0;
+	my $signed = 0;
+	my $valid = 0;
 
 	print OUTPUT ("<TR> <TD> " . $zone . "</TD> ");
     print OUTPUT ("<TD ALIGN = \"right\">$globalClicks{$zone}</FONT> </TD> \n") if %globalClicks;
-	$numVisits += $globalClicks{$zone} if %globalClicks;
+	my $numVisits += $globalClicks{$zone} if %globalClicks;
 	#DNSKEY query for signed/unsigned	
 	$testRes->dnssec(1);
 	$reply = $testRes->send($zone, 'DNSKEY');
@@ -143,7 +149,7 @@ while (<LIST>) {
 			}
 		} elsif ($header->rcode eq "SERVFAIL") {
 			$testRes->cdflag(1);
-			@problemzones[++$p] = $zone;
+			$problemzones[++$p] = $zone;
 			$reply = $testRes->send($zone, 'DNSKEY');	
 				if ($reply ne undef) {
 					my $headerv = Net::DNS::Header->new;
@@ -159,7 +165,7 @@ while (<LIST>) {
 							$valid = 0;
 						}
 					}
-					@problems[$p] = what_happened($reply, $zone);
+					$problems[$p] = what_happened($testRes, $reply, $zone, $totalErr);
 				}
 		} 
 	} else {
@@ -189,7 +195,7 @@ while (<LIST>) {
 			my $ansSec = $headerc->ancount;
 			if ($ansSec > 0) {
 				print OUTPUT ("<TD ALIGN = \"center\"BGCOLOR=\"#008000\"><FONT COLOR=\"#FFFFFF\">Chain</FONT> </TD> \n");
-				@islands[++$is] = $zone;
+				$islands[++$is] = $zone;
 				$numChained++;
 			}  else {
 				if ($signed == 1) {
@@ -219,30 +225,36 @@ while (<LIST>) {
 print OUTPUT ("</TABLE> <br> <HR> \n");
 print OUTPUT ("<BR></P></BODY></HTML>\n");
 
-#now send a report to admin
-if ($p > 0) {
-	my $body = "$p zones with potential problems:\n";
-	for (my $i=0; $i<$p; $i++) {
-		$body .= @problemzones[$i] . " " . @problems[$i] . "\n";
-	}
-	#now put in the totals of errors
-	$body .= "==============================\n\n";
-	$body .= $errNOSIG . "\t" . $errEXPIRED . "\t" . $errINCEPT . "\t" . $errBADROLL . "\t" . $errDSPREPUB . "\t" . $errOTHER . "\n";
 
-	my $email = Email::Simple->create(
-		header => [
-			From =>  $sender,
-			To => $recipient,
-			Subject => "Today's DNSSEC FAIL",
-		],
-		body => $body,
-	);
-	sendmail($email);
+send_report($p, \@problemzones, \@problems, $sender, $recipient, $totalErr);
 }
 
+sub send_report($$$$$$) {
+    my ($p, $problemzones, $problems, $sender, $recipient, $totalErr) = @_;
+	#now send a report to admin
+	if ($p > 0) {
+		my $body = "$p zones with potential problems:\n";
+		for (my $i=0; $i<$p; $i++) {
+			$body .= @$problemzones[$i] . " " . @$problems[$i] . "\n";
+		}
+		#now put in the totals of errors
+		$body .= "==============================\n\n";
+		$body .= $$totalErr{'NOSIG'} . "\t" . $$totalErr{'EXPIRED'} . "\t" . $$totalErr{'INCEPT'} . "\t" . $$totalErr{'BADROLL'} . "\t" . $$totalErr{'DSPREPUB'} . "\t" . $$totalErr{'OTHER'} . "\n";
 
-sub what_happened() {
-	my ($resp, $zone) = @_;
+		my $email = Email::Simple->create(
+			header => [
+				From =>  $sender,
+				To => $recipient,
+				Subject => "Today's DNSSEC FAIL",
+			],
+			body => $body,
+		);
+		sendmail($email);
+	}
+}
+
+sub what_happened($$$$) {
+	my ($testRes, $resp, $zone, $totalErr) = @_;
 	my $sigExpire;
 	my $sigIncep;
 	my @keyRRs;
@@ -260,22 +272,22 @@ sub what_happened() {
 		foreach my $respAns (@keyResp) {
 			my $theType = $respAns->type;
 			if ($theType eq "DNSKEY") {
-				@keyRRs[++$#keyRRs] = $respAns;
+				$keyRRs[++$#keyRRs] = $respAns;
 			} elsif ($theType eq "RRSIG") {
 				$foundSIG = 1;
 				$sigExpire = $respAns->sigexpiration;
 				$sigIncep = $respAns->siginception;			
 				if ($currentdatestring gt $sigExpire) {
-					$errEXPIRED++;
+					$$totalErr{'EXPIRED'}++;
 					return "SIGs expired.";
 				} elsif ($currentdatestring lt $sigIncep) {
-					$errINCEPT++;
+					$$totalErr{'INCEPT'}++;
 					return "SIGs not valid yet.";
 				}
 			}
 		}
 		if ($foundSIG == 0) {
-			$errNOSIG++;
+			$$totalErr{'NOSIG'}++;
 			return "No SIGs.";
 		}
 		
@@ -310,16 +322,16 @@ sub what_happened() {
 					}
 				}
 				if ($match == 0) {
-					$errBADROLL++;
+					$$totalErr{'BADROLL'}++;
 					return "Bad KSK rollover";
 				} elsif ($inuse == 0) {
-					$errDSPREPUB++;
+					$$totalErr{'DSPREPUB'}++;
 					return "DS points to pre-published key";
 				}
 			}
 		}
 	}
-	$errOTHER++;
+	$$totalErr{'OTHER'}++;
 	return "Some other strange error occurred";				
 }
 
