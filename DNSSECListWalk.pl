@@ -139,6 +139,29 @@ sub what_happened($$$$) {
 	return "Some other strange error occurred";				
 }
 
+sub parseOptions() {
+	my ($help, $sender, $recipient, $zoneFile, $activityFile);
+
+	usage() if ( !  GetOptions(
+		'help|?' => \$help, 
+		'sender=s' => \$sender, 
+		'recipient=s' => \$recipient, 
+		'zonefile=s' => \$zoneFile, 
+		'activityfile=s' =>\$activityFile)
+			or defined $help );
+
+	sub usage {
+		print "Unknown option: @_\n" if ( @_ );
+		print "usage: DNSSECListWalk.pl [--zone-file FILE] \n\t[--activity-file FILE] [-sender EMAIL] [-recipient EMAIL] [--help|-?]\n";
+		exit 0;
+	}
+
+	$zoneFile = "test-zones.txt" unless defined $zoneFile;
+	$recipient = "bob\@example.com" unless defined $recipient;
+	$sender = "alice\@example.net" unless defined $sender;
+	return ($help, $sender, $recipient, $zoneFile, $activityFile);
+}
+
 sub main() {
 	my $name;
 	my @line; 
@@ -160,26 +183,8 @@ sub main() {
 	my $p = -1;
 	my $is = -1;
 
-	my ($help, $sender, $recipient, $zoneFile, $activityFile, @activity);
+	my ($help, $sender, $recipient, $zoneFile, $activityFile) = parseOptions();
 
-	usage() if ( !  GetOptions(
-		'help|?' => \$help, 
-		'sender=s' => \$sender, 
-		'recipient=s' => \$recipient, 
-		'zonefile=s' => \$zoneFile, 
-		'activityfile=s' =>\$activityFile)
-			or defined $help );
-
-	sub usage {
-		print "Unknown option: @_\n" if ( @_ );
-		print "usage: DNSSECListWalk.pl [--zone-file FILE] \n\t[--activity-file FILE] [-sender EMAIL] [-recipient EMAIL] [--help|-?]\n";
-		exit 0;
-	}
-
-	#declare some variables now
-	$zoneFile = "test-zones.txt" unless defined $zoneFile;
-	$recipient = "bob\@example.com" unless defined $recipient;
-	$sender = "alice\@example.net" unless defined $sender;
 
 	my ($activityData, $globalClicks);
 	if (defined $activityFile) {
@@ -188,13 +193,12 @@ sub main() {
 		$globalClicks = {};
 		foreach my $click (@$activityData) {
 			$$globalClicks{$$click{'agency'}} = $$click{'global_clicks'};
-			#print "click $click a $$click{'agency'} g $$click{'global_clicks'} gc $globalClicks{$$click{'agency'}}\n"
+			#print "click $click a $$click{'agency'} g $$click{'global_clicks'} gc $$globalClicks{$$click{'agency'}}\n"
 		}
 	}
 
 	open(LIST, $zoneFile) || die "Cannot open zone input file";
 	open(OUTPUT, ">DNSSECListStatus.html") || die "Cannot open output file";
-
 
 	my $testRes = Net::DNS::Resolver->new();
 
@@ -224,15 +228,21 @@ sub main() {
 
 	while (<LIST>) {
 		my ($zone) = split(/\t/, $_);
+		chomp $zone;
 		my $reply = Net::DNS::Packet->new(); 
 
 		my $signed = 0;
 		my $valid = 0;
-		my $zoneVisits = $$globalClicks{$zone} ? $$globalClicks{$zone} : '';
 
-		print OUTPUT ("<TR> <TD> " . $zoneVisits . "</TD> ");
+		print OUTPUT ("<TR> <TD> " . $zone . "</TD> ");
 		if ($globalClicks) {
-			$numVisits += $$globalClicks{$zone} ? $$globalClicks{$zone} : 0;
+			#print "globalClicks defined while processing $zone\n";
+			my $zoneVisits = '';
+			if (exists $$globalClicks{$zone}) {
+				$zoneVisits = $$globalClicks{$zone};
+				$numVisits += $zoneVisits;
+				#print "zone $zone zoneVisits $zoneVisits numVisits $numVisits\n";
+			}
 			print OUTPUT ("<TD ALIGN = \"right\">$zoneVisits</FONT> </TD> \n") 
 		}
 		#DNSKEY query for signed/unsigned	
