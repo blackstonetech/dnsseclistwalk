@@ -1,0 +1,72 @@
+<HTML><HEAD>
+<TITLE>DNSSEC Deployment Status</TITLE></HEAD>
+<BODY LANG="en-US" DIR="LTR"> <H1>DNSSEC Deployment Status</H1>
+<p>This is the current snapshot of the state of DNSSEC deployment in a selection of domains.
+
+<p>In the table below:</p>
+<p><b>Signed</b> column indicates that the zone has DNSSEC RRs present or not (i.e. RRSIGs are returned in a response.</p>
+<p><b>Status</b> column indicates whether or not the signatures are valid, or if there is some sort of error that would cause validation to fail.  Not having a signed delegation from .gov does not mean failure in this test.</p>
+<p><b>Island/Chained</b> column indicates if the zone has a secure delegation (i.e. a DS RR) from its parent zone,
+usually the top-level TLD or a second-level.</p>
+
+<p><b>NOTE:</b> zones that are no longer present are the zones with <b>"Error"</b> in the last column.</p>
+<p>Time: [% localtime % ]</p>
+<TABLE BORDER="4" CELLSPACING="4" CELLPADDING="5">
+<CAPTION>Zone Status</CAPTION>
+<TR> <TD ALIGN = "center"> Zonename </TD>
+[% IF globalClicks %]
+<TD ALIGN = "center"> Site Visits </TD>
+[% END %]
+<TD ALIGN = "center"> Signed? </TD>
+<TD ALIGN = "center"> Status </TD>
+<TD ALIGN = "center"> Island or Chain? </TD>
+</TR>
+
+
+[% FOREACH zone in zones %]
+<TR>
+<TD> [% zone.name %]</TD>
+[% IF globalClicks %]
+<TD ALIGN = "right">[% zoneVisits %]</FONT> </TD> \n")
+[% END %]
+[% IF zone.signed %]
+<TD ALIGN = "center" BGCOLOR="#008000"><FONT COLOR="#FFFFFF">Signed</FONT> </TD>
+  [% IF zone.valid %]
+  <TD ALIGN = "center"BGCOLOR="#008000"><FONT COLOR="#FFFFFF">Valid</FONT> </TD>
+  [% ELSE %]
+<TD ALIGN = "center"BGCOLOR="#FF0000"><FONT COLOR="#FFFFFF"><a href="http://dnsviz.net/search/?d=[% zone.name %]">Error</a></FONT></TD>
+  [% END %]
+[% ELSE %]
+<TD ALIGN = "center" BGCOLOR="#FF0000"><FONT COLOR="#FFFFFF">Unsigned</FONT> </TD>
+<TD ALIGN = "center">N/A</FONT> </TD>
+[% END %]
+[% IF zone.ds %]
+  [% IF zone.noerror %]
+    [% IF zone.chain %]
+<TD ALIGN = "center"BGCOLOR="#008000"><FONT COLOR="#FFFFFF">Chain</FONT> </TD>
+    [% ELSIF zone.signed %]
+<TD ALIGN = "center">Island</FONT> </TD>
+    [% ELSE %]
+<TD ALIGN = "center">N/A</FONT> </TD>
+    [% END %]
+  [% ELSE %]
+<TD ALIGN = "center">Error</FONT> </TD>
+  [% END %]
+[% ELSE %]
+<TD ALIGN = "center">Error</FONT> </TD>
+[% END %]
+</TR>
+
+<TR><TD ALIGN="center"><b>Totals:</b></TD>
+[% IF globalClicks %]
+<TD ALIGN = "center">[% zone.numVisits %]</TD> 
+[% END %]
+<TD ALIGN="center">[% $numSigned %]</TD>
+<TD ALIGN="center">[% $numValid %]</TD>
+<TD ALIGN="center">[% $numChained %]</TD>
+
+</TABLE>
+<br>
+<HR>
+</BODY>
+</HTML>

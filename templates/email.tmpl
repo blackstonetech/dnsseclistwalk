@@ -1,0 +1,7 @@
+[% problems.size %] zones with potential problems:
+
+[% FOREACH problem in problems %]
+[% problem.zone %]	[% problem.description %]
+[% END %]
+==============================
+[% totalErr.NOSIG %]	[% totalErr.EXPIRED %]	[% totalErr.INCEPT %]	[% totalErr.BADROLL %]	[% totalErr.DSPREPUB %]	[% totalErr.OTHER %]
