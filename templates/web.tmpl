@@ -23,11 +23,11 @@ usually the top-level TLD or a second-level.</p>
 </TR>
 
 
-[% FOREACH zone in zones %]
+[% FOREACH zone IN zones %]
 <TR>
 <TD> [% zone.name %]</TD>
-[% IF globalClicks %]
-<TD ALIGN = "right">[% zoneVisits %]</FONT> </TD> \n")
+[% IF globalClicks % ]
+<TD ALIGN = "right">[% zone.visits %]</FONT> </TD> \n")
 [% END %]
 [% IF zone.signed %]
 <TD ALIGN = "center" BGCOLOR="#008000"><FONT COLOR="#FFFFFF">Signed</FONT> </TD>
@@ -40,9 +40,9 @@ usually the top-level TLD or a second-level.</p>
 <TD ALIGN = "center" BGCOLOR="#FF0000"><FONT COLOR="#FFFFFF">Unsigned</FONT> </TD>
 <TD ALIGN = "center">N/A</FONT> </TD>
 [% END %]
-[% IF zone.ds %]
-  [% IF zone.noerror %]
-    [% IF zone.chain %]
+[% IF zone.header %]
+  [% IF zone.header.noerror %]
+    [% IF zone.header.ansSec %]
 <TD ALIGN = "center"BGCOLOR="#008000"><FONT COLOR="#FFFFFF">Chain</FONT> </TD>
     [% ELSIF zone.signed %]
 <TD ALIGN = "center">Island</FONT> </TD>
@@ -59,11 +59,11 @@ usually the top-level TLD or a second-level.</p>
 
 <TR><TD ALIGN="center"><b>Totals:</b></TD>
 [% IF globalClicks %]
-<TD ALIGN = "center">[% zone.numVisits %]</TD> 
+<TD ALIGN = "center">[% numVisits %]</TD> 
 [% END %]
-<TD ALIGN="center">[% $numSigned %]</TD>
-<TD ALIGN="center">[% $numValid %]</TD>
-<TD ALIGN="center">[% $numChained %]</TD>
+<TD ALIGN="center">[% numSigned %]</TD>
+<TD ALIGN="center">[% numValid %]</TD>
+<TD ALIGN="center">[% numChained %]</TD>
 
 </TABLE>
 <br>
