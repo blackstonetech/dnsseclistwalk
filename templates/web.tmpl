@@ -10,7 +10,7 @@
 usually the top-level TLD or a second-level.</p>
 
 <p><b>NOTE:</b> zones that are no longer present are the zones with <b>"Error"</b> in the last column.</p>
-<p>Time: [% localtime % ]</p>
+<p>Time: [% localtime %] </p>
 <TABLE BORDER="4" CELLSPACING="4" CELLPADDING="5">
 <CAPTION>Zone Status</CAPTION>
 <TR> <TD ALIGN = "center"> Zonename </TD>
@@ -26,8 +26,8 @@ usually the top-level TLD or a second-level.</p>
 [% FOREACH zone IN zones %]
 <TR>
 <TD> [% zone.name %]</TD>
-[% IF globalClicks % ]
-<TD ALIGN = "right">[% zone.visits %]</FONT> </TD> \n")
+[% IF globalClicks %]
+<TD ALIGN = "right">[% zone.visits %]</FONT> </TD>
 [% END %]
 [% IF zone.signed %]
 <TD ALIGN = "center" BGCOLOR="#008000"><FONT COLOR="#FFFFFF">Signed</FONT> </TD>
@@ -56,6 +56,7 @@ usually the top-level TLD or a second-level.</p>
 <TD ALIGN = "center">Error</FONT> </TD>
 [% END %]
 </TR>
+[% END %]
 
 <TR><TD ALIGN="center"><b>Totals:</b></TD>
 [% IF globalClicks %]
@@ -66,7 +67,8 @@ usually the top-level TLD or a second-level.</p>
 <TD ALIGN="center">[% numChained %]</TD>
 
 </TABLE>
-<br>
+<br/>
 <HR>
+<BR/>
 </BODY>
 </HTML>

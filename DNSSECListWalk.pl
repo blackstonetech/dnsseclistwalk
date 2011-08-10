@@ -15,7 +15,7 @@
 package Local::DNSSECListWalk;
 
 use strict;
-use warnings;
+#use warnings;
 # This script originally used the Net::DNS::Sendmail module, but it is not in CPAN,
 # and the only description of it out there on Softpedia
 # http://linux.softpedia.com/get/Programming/Libraries/Net-DNS-Sendmail-21423.shtml
@@ -69,6 +69,31 @@ sub send_report($$$$) {
 		#print $email->as_string();
 		sendmail($email);
 	}
+}
+
+# send a report to the administrator regarding failures
+sub render_page($$$$$$) {
+	my ($zones, 
+		$globalClicks, 
+		$numValid, 
+		$numChained, 
+		$numSigned, 
+		$numVisits,
+	) = @_;
+	my $time = localtime();
+	#print encode_json $zones;
+		my $vars = { 
+			'zones' => $zones,
+			'globalClicks' => $globalClicks,
+			'numValid' => $numValid, 
+			'numChained' => $numChained, 
+			'numSigned' => $numSigned, 
+			'numVisits' => $numVisits,
+			'localtime' => $time,
+		};
+		my $page = '';
+		$tt->process('web.tmpl', $vars, \$page) || die $tt->error(), '\n';
+		return $page;
 }
 
 sub what_happened($$$$) {
@@ -207,6 +232,7 @@ sub main() {
 		'DSPREPUB' => 0,
 		'OTHER' => 0,
 	};
+	my $zoneList = [];
 	my $problems = [];
 	my $p = -1;
 
@@ -247,6 +273,9 @@ sub main() {
 	while (<LIST>) {
 		my ($zone) = split(/\t/, $_);
 		chomp $zone;
+	    my $zoneDetail = {};
+		$zoneDetail->{'name'} = $zone;
+
 		my $reply = Net::DNS::Packet->new(); 
 
 		my $signed = 0;
@@ -259,6 +288,7 @@ sub main() {
 			if (exists $$globalClicks{$zone}) {
 				$zoneVisits = $$globalClicks{$zone};
 				$numVisits += $zoneVisits;
+				$zoneDetail->{'visits'} = $zoneVisits;
 				#print "zone $zone zoneVisits $zoneVisits numVisits $numVisits\n";
 			}
 			print OUTPUT ("<TD ALIGN = \"right\">$zoneVisits</FONT> </TD> \n") 
@@ -305,6 +335,8 @@ sub main() {
 			$signed = 0;
 			$valid = 0;
 		}
+		$zoneDetail->{'signed'} = $signed;
+		$zoneDetail->{'valid'} = $valid;
 
 		$testRes->cdflag(0);
 		if ($signed eq 1) {
@@ -325,8 +357,10 @@ sub main() {
 			my $headerc = Net::DNS::Header->new;
 			$headerc = $reply->header;
 			if ($headerc->rcode eq "NOERROR") {
+				$zoneDetail->{'header'}{'noerror'} = 1;
 				my $ansSec = $headerc->ancount;
 				if ($ansSec > 0) {
+					$zoneDetail->{'header'}{'ansSec'} = 1;
 					print OUTPUT ("<TD ALIGN = \"center\"BGCOLOR=\"#008000\"><FONT COLOR=\"#FFFFFF\">Chain</FONT> </TD> \n");
 					$numChained++;
 				}  else {
@@ -343,6 +377,7 @@ sub main() {
 			print OUTPUT ("<TD ALIGN = \"center\">Error</FONT> </TD> \n");
 		}
 		print OUTPUT ("</TR>\n");
+		push @$zoneList, $zoneDetail;
 	}
 
 	print OUTPUT ("<TR><TD ALIGN=\"center\"><b>Totals:</b></TD>");
@@ -354,6 +389,16 @@ sub main() {
 	print OUTPUT ("</TABLE> <br> <HR> \n");
 	print OUTPUT ("<BR></P></BODY></HTML>\n");
 
+	my $pageText = render_page($zoneList,
+		$globalClicks,
+		$numValid, 
+		$numChained, 
+		$numSigned, 
+		$numVisits
+	);
+
+	print json_encode $zoneList;
+	print $pageText;
 
 	send_report($problems, $sender, $recipient, $totalErr);
 }
