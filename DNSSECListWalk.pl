@@ -196,7 +196,7 @@ sub parseOptions() {
 		exit 0;
 	}
 
-	$zoneFile = "test-zones.txt" unless defined $zoneFile;
+	$zoneFile = "sample-zones.txt" unless defined $zoneFile;
 	$recipient = "bob\@example.com" unless defined $recipient;
 	$sender = "alice\@example.net" unless defined $sender;
 	$outputFile = "DNSSECListStatus.html" unless defined $outputFile;
