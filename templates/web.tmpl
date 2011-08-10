@@ -1,75 +1,86 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
-<HTML><HEAD>
-<TITLE>DNSSEC Deployment Status</TITLE></HEAD>
-<BODY LANG="en-US" DIR="LTR"> <H1>DNSSEC Deployment Status</H1>
-<p>This is the current snapshot of the state of DNSSEC deployment in a selection of domains.
-
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>DNSSEC Deployment Status</title>
+<style type="text/css">
+.error { 
+    background-color: #FF0000;
+    color: #FFFFFF;
+}
+.ok { 
+    background-color: #008800;
+    color: #FFFFFF;
+}
+</style>
+</head>
+<body lang="en-US" dir="ltr" xml:lang="en-US">
+<h1>DNSSEC Deployment Status</h1>
+<p>This is the current snapshot of the state of DNSSEC deployment in a selection of domains.</p>
 <p>In the table below:</p>
-<p><b>Signed</b> column indicates that the zone has DNSSEC RRs present or not (i.e. RRSIGs are returned in a response.</p>
-<p><b>Status</b> column indicates whether or not the signatures are valid, or if there is some sort of error that would cause validation to fail.  Not having a signed delegation from .gov does not mean failure in this test.</p>
-<p><b>Island/Chained</b> column indicates if the zone has a secure delegation (i.e. a DS RR) from its parent zone,
-usually the top-level TLD or a second-level.</p>
-
+<p><b>Signed</b> column indicates that the zone has DNSSEC RRs present or not (i.e. RRSIGs are returned in a response.</p> <p><b>Status</b> column indicates whether or not the signatures are valid, or if there is some sort of error that would cause validation to fail. Not having a signed delegation from .gov does not mean failure in this test.</p>
+<p><b>Island/Chained</b> column indicates if the zone has a secure delegation (i.e. a DS RR) from its parent zone, usually the top-level TLD or a second-level.</p>
 <p><b>NOTE:</b> zones that are no longer present are the zones with <b>"Error"</b> in the last column.</p>
 <p>Time: [% localtime %] </p>
-<TABLE BORDER="4" CELLSPACING="4" CELLPADDING="5">
-<CAPTION>Zone Status</CAPTION>
-<TR> <TD align="center"> Zonename </TD>
+<table border="4" cellspacing="4" cellpadding="5">
+<caption>Zone Status</caption>
+<tr>
+<td align="center">Zonename</td>
 [% IF globalClicks %]
-<TD align="center"> Site Visits </TD>
+<td align="center">Site Visits</td>
 [% END %]
-<TD align="center"> Signed? </TD>
-<TD align="center"> Status </TD>
-<TD align="center"> Island or Chain? </TD>
-</TR>
-
+<td align="center">Signed?</td>
+<td align="center">Status</td>
+<td align="center">Island or Chain?</td>
+</tr>
 
 [% FOREACH zone IN zones %]
-<TR>
-<TD> [% zone.name %]</TD>
+<tr>
+<td> [% zone.name %]</td>
 [% IF globalClicks %]
-<TD align="right">[% zone.visits %]</TD>
+<td align="right">[% zone.visits %]</td>
 [% END %]
 [% IF zone.signed %]
-<TD align="center" BGCOLOR="#008000"><FONT COLOR="#FFFFFF">Signed</FONT> </TD>
+<td align="center" class="ok">Signed</td>
   [% IF zone.valid %]
-  <TD align="center"BGCOLOR="#008000"><FONT COLOR="#FFFFFF">Valid</FONT> </TD>
+  <td align="center" class="ok">Valid</font> </td>
   [% ELSE %]
-<TD align="center"BGCOLOR="#FF0000"><FONT COLOR="#FFFFFF"><a href="http://dnsviz.net/search/?d=[% zone.name %]">Error</a></FONT></TD>
+<td align="center" class="error"><a href="http://dnsviz.net/search/?d=[% zone.name %]">Error</a></td>
   [% END %]
 [% ELSE %]
-<TD align="center" BGCOLOR="#FF0000"><FONT COLOR="#FFFFFF">Unsigned</FONT> </TD>
-<TD align="center">N/A</TD>
+<td align="center" class="error">Unsigned</td>
+<td align="center">N/A</td>
 [% END %]
 [% IF zone.header %]
   [% IF zone.header.noerror %]
     [% IF zone.header.ansSec %]
-<TD align="center"BGCOLOR="#008000"><FONT COLOR="#FFFFFF">Chain</FONT> </TD>
+<td align="center" class="ok">Chain</td>
     [% ELSIF zone.signed %]
-<TD align="center">Island</TD>
+<td align="center">Island</td>
     [% ELSE %]
-<TD align="center">N/A</TD>
+<td align="center">N/A</td>
     [% END %]
   [% ELSE %]
-<TD align="center">Error</TD>
+<td align="center">Error</td>
   [% END %]
 [% ELSE %]
-<TD align="center">Error</TD>
+<td align="center">Error</td>
 [% END %]
-</TR>
+</tr>
 [% END %]
 
-<TR><TD align="center"><b>Totals:</b></TD>
+<tr>
+<td align="center"><b>Totals:</b></td>
 [% IF globalClicks %]
-<TD align="center">[% numVisits %]</TD> 
+<td align="center">[% numVisits %]</td> 
 [% END %]
-<TD align="center">[% numSigned %]</TD>
-<TD align="center">[% numValid %]</TD>
-<TD align="center">[% numChained %]</TD>
-
-</TABLE>
+<td align="center">[% numSigned %]</td>
+<td align="center">[% numValid %]</td>
+<td align="center">[% numChained %]</td>
+</tr>
+</table>
 <br/>
-<HR>
-<BR/>
-</BODY>
-</HTML>
+<hr/>
+<br/>
+</body>
+</html>
