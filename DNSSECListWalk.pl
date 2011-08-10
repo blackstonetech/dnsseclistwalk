@@ -1,16 +1,21 @@
-#!/usr/bin/env perl -w
+#!/usr/bin/env perl
 
-# The original script was a U.S. Government work and is such
-# noncopyrighted, see: 
-# http://en.wikipedia.org/wiki/Copyright_status_of_work_by_the_U.S._government
-#   by
+# DNSSECListWalk
+# Originally by
 #   Scott Rose, NIST
 #   8/7/09
+#
+# The original script was a U.S. Government work and is such
+# noncopyrighted in the U.S. (effectively public domain), see: 
+#  http://en.wikipedia.org/wiki/Copyright_status_of_work_by_the_U.S._government
 # Modifications are Copyright (C) 2011  Blackstone Technology Group
-#   by
-#   Richard Bullington-McGuire <rbullington-mcguire@bstonetech.com>
+#   - Richard Bullington-McGuire <rbullington-mcguire@bstonetech.com>
 #   7/29/2011
 
+package Local::DNSSECListWalk;
+
+use strict;
+use warnings;
 # This script originally used the Net::DNS::Sendmail module, but it is not in CPAN,
 # and the only description of it out there on Softpedia
 # http://linux.softpedia.com/get/Programming/Libraries/Net-DNS-Sendmail-21423.shtml
@@ -20,11 +25,10 @@
 # in this age of spammers, whitelists, SPF records, and such.
 #use Net::DNS::Sendmail;
 
-
-use strict;
 use Email::Sender::Simple qw(sendmail);
 use Email::Simple;
 use Email::Simple::Creator;
+use File::Basename;
 use Getopt::Long;
 use JSON::PP;
 use Net::DNS;
@@ -32,19 +36,28 @@ use Net::DNS::Resolver;
 use Net::DNS::RR::DS;
 use Net::DNS::SEC;
 use Time::Local;
+use Template;
 
-sub send_report($$$$$$) {
-	my ($p, $problemzones, $problems, $sender, $recipient, $totalErr) = @_;
-	#now send a report to admin
-	if ($p > 0) {
-		my $body = "$p zones with potential problems:\n";
-		for (my $i=0; $i<$p; $i++) {
-			$body .= @$problemzones[$i] . " " . @$problems[$i] . "\n";
-		}
-		#now put in the totals of errors
-		$body .= "==============================\n\n";
-		$body .= $$totalErr{'NOSIG'} . "\t" . $$totalErr{'EXPIRED'} . "\t" . $$totalErr{'INCEPT'} . "\t" . $$totalErr{'BADROLL'} . "\t" . $$totalErr{'DSPREPUB'} . "\t" . $$totalErr{'OTHER'} . "\n";
+my $dirname = dirname(__FILE__);
+my $tt = Template->new({
+		INCLUDE_PATH => "$dirname/templates", 
+		INTERPOLATE  => 0,
+}) || die "$Template::ERROR\n";
 
+__PACKAGE__->main() unless caller;
+
+# send a report to the administrator regarding failures
+sub send_report($$$$) {
+	my ($problems, $sender, $recipient, $totalErr) = @_;
+	#print "send report for $problems count $#$problems\n";
+	#print encode_json $problems;
+	if ($#$problems > 0) {
+		my $vars = { 
+			'problems' => $problems,
+			'totalErr' => $totalErr,
+		};
+		my $body = '';
+		$tt->process('email.tmpl', $vars, \$body) || die $tt->error(), '\n';
 		my $email = Email::Simple->create(
 			header => [
 				From =>  $sender,
@@ -53,6 +66,7 @@ sub send_report($$$$$$) {
 			],
 			body => $body,
 		);
+		#print $email->as_string();
 		sendmail($email);
 	}
 }
@@ -63,7 +77,7 @@ sub what_happened($$$$) {
 	my $sigIncep;
 	my @keyRRs;
 	my @keyResp = $resp->answer;
-#get the keys in a separate array and its signature's expiration
+	#get the keys in a separate array and its signature's expiration
 	my @inct=gmtime(time);
 	my $foundSIG = 0;
 	my $currentdatestring=  sprintf ("%d%02d%02d%02d%02d%02d",
@@ -168,7 +182,7 @@ sub getGlobalClicks($) {
 	my ($activityFile) = @_;
 	my $globalClicks;
 	if (defined $activityFile) {
-		my $activity= do { local( @ARGV, $/ ) = $activityFile ; <> } ;
+		my $activity = do { local( @ARGV, $/ ) = $activityFile ; <> } ;
 		my $activityData = decode_json($activity);
 		$globalClicks = {};
 		foreach my $click (@$activityData) {
@@ -180,7 +194,6 @@ sub getGlobalClicks($) {
 }
 
 sub main() {
-	my $name;
 	my @line; 
 	my $numValid = 0;
 	my $numChained = 0;
@@ -194,11 +207,8 @@ sub main() {
 		'DSPREPUB' => 0,
 		'OTHER' => 0,
 	};
-	my @problemzones;
-	my @islands;
-	my @problems;
+	my $problems = [];
 	my $p = -1;
-	my $is = -1;
 
 	my ($help, $sender, $recipient, $zoneFile, $activityFile, $outputFile) = parseOptions();
 
@@ -271,9 +281,10 @@ sub main() {
 				}
 			} elsif ($header->rcode eq "SERVFAIL") {
 				$testRes->cdflag(1);
-				$problemzones[++$p] = $zone;
+				my $problem = { 'zone' => $zone };
+				push @$problems, $problem;
 				$reply = $testRes->send($zone, 'DNSKEY');	
-					if ($reply ne undef) {
+					if ($reply) {
 						my $headerv = Net::DNS::Header->new;
 						$headerv = $reply->header;
 						if ($headerv->rcode eq "NOERROR") {
@@ -287,7 +298,7 @@ sub main() {
 								$valid = 0;
 							}
 						}
-						$problems[$p] = what_happened($testRes, $reply, $zone, $totalErr);
+						$problem->{'description'} = what_happened($testRes, $reply, $zone, $totalErr);
 					}
 			} 
 		} else {
@@ -317,7 +328,6 @@ sub main() {
 				my $ansSec = $headerc->ancount;
 				if ($ansSec > 0) {
 					print OUTPUT ("<TD ALIGN = \"center\"BGCOLOR=\"#008000\"><FONT COLOR=\"#FFFFFF\">Chain</FONT> </TD> \n");
-					$islands[++$is] = $zone;
 					$numChained++;
 				}  else {
 					if ($signed == 1) {
@@ -332,23 +342,19 @@ sub main() {
 		} else {
 			print OUTPUT ("<TD ALIGN = \"center\">Error</FONT> </TD> \n");
 		}
-
-		#now do dnsfunnel test
-
-		 print OUTPUT ("</TR>\n");
+		print OUTPUT ("</TR>\n");
 	}
 
-		print OUTPUT ("<TR><TD ALIGN=\"center\"><b>Totals:</b></TD>");
-		print OUTPUT ("<TD ALIGN = \"center\">" . $numVisits . " </TD> \n") if $globalClicks;
-		print OUTPUT ("<TD ALIGN=\"center\">" . $numSigned . "</TD>");
-		print OUTPUT ("<TD ALIGN=\"center\">" . $numValid . "</TD>");
-		print OUTPUT ("<TD ALIGN=\"center\">" . $numChained . "</TD>");
+	print OUTPUT ("<TR><TD ALIGN=\"center\"><b>Totals:</b></TD>");
+	print OUTPUT ("<TD ALIGN = \"center\">" . $numVisits . " </TD> \n") if $globalClicks;
+	print OUTPUT ("<TD ALIGN=\"center\">" . $numSigned . "</TD>");
+	print OUTPUT ("<TD ALIGN=\"center\">" . $numValid . "</TD>");
+	print OUTPUT ("<TD ALIGN=\"center\">" . $numChained . "</TD>");
 
 	print OUTPUT ("</TABLE> <br> <HR> \n");
 	print OUTPUT ("<BR></P></BODY></HTML>\n");
 
 
-	send_report($p, \@problemzones, \@problems, $sender, $recipient, $totalErr);
+	send_report($problems, $sender, $recipient, $totalErr);
 }
 
-main();
