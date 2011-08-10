@@ -1,3 +1,4 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <HTML><HEAD>
 <TITLE>DNSSEC Deployment Status</TITLE></HEAD>
 <BODY LANG="en-US" DIR="LTR"> <H1>DNSSEC Deployment Status</H1>
@@ -13,13 +14,13 @@ usually the top-level TLD or a second-level.</p>
 <p>Time: [% localtime %] </p>
 <TABLE BORDER="4" CELLSPACING="4" CELLPADDING="5">
 <CAPTION>Zone Status</CAPTION>
-<TR> <TD ALIGN = "center"> Zonename </TD>
+<TR> <TD align="center"> Zonename </TD>
 [% IF globalClicks %]
-<TD ALIGN = "center"> Site Visits </TD>
+<TD align="center"> Site Visits </TD>
 [% END %]
-<TD ALIGN = "center"> Signed? </TD>
-<TD ALIGN = "center"> Status </TD>
-<TD ALIGN = "center"> Island or Chain? </TD>
+<TD align="center"> Signed? </TD>
+<TD align="center"> Status </TD>
+<TD align="center"> Island or Chain? </TD>
 </TR>
 
 
@@ -27,44 +28,44 @@ usually the top-level TLD or a second-level.</p>
 <TR>
 <TD> [% zone.name %]</TD>
 [% IF globalClicks %]
-<TD ALIGN = "right">[% zone.visits %]</FONT> </TD>
+<TD align="right">[% zone.visits %]</TD>
 [% END %]
 [% IF zone.signed %]
-<TD ALIGN = "center" BGCOLOR="#008000"><FONT COLOR="#FFFFFF">Signed</FONT> </TD>
+<TD align="center" BGCOLOR="#008000"><FONT COLOR="#FFFFFF">Signed</FONT> </TD>
   [% IF zone.valid %]
-  <TD ALIGN = "center"BGCOLOR="#008000"><FONT COLOR="#FFFFFF">Valid</FONT> </TD>
+  <TD align="center"BGCOLOR="#008000"><FONT COLOR="#FFFFFF">Valid</FONT> </TD>
   [% ELSE %]
-<TD ALIGN = "center"BGCOLOR="#FF0000"><FONT COLOR="#FFFFFF"><a href="http://dnsviz.net/search/?d=[% zone.name %]">Error</a></FONT></TD>
+<TD align="center"BGCOLOR="#FF0000"><FONT COLOR="#FFFFFF"><a href="http://dnsviz.net/search/?d=[% zone.name %]">Error</a></FONT></TD>
   [% END %]
 [% ELSE %]
-<TD ALIGN = "center" BGCOLOR="#FF0000"><FONT COLOR="#FFFFFF">Unsigned</FONT> </TD>
-<TD ALIGN = "center">N/A</FONT> </TD>
+<TD align="center" BGCOLOR="#FF0000"><FONT COLOR="#FFFFFF">Unsigned</FONT> </TD>
+<TD align="center">N/A</TD>
 [% END %]
 [% IF zone.header %]
   [% IF zone.header.noerror %]
     [% IF zone.header.ansSec %]
-<TD ALIGN = "center"BGCOLOR="#008000"><FONT COLOR="#FFFFFF">Chain</FONT> </TD>
+<TD align="center"BGCOLOR="#008000"><FONT COLOR="#FFFFFF">Chain</FONT> </TD>
     [% ELSIF zone.signed %]
-<TD ALIGN = "center">Island</FONT> </TD>
+<TD align="center">Island</TD>
     [% ELSE %]
-<TD ALIGN = "center">N/A</FONT> </TD>
+<TD align="center">N/A</TD>
     [% END %]
   [% ELSE %]
-<TD ALIGN = "center">Error</FONT> </TD>
+<TD align="center">Error</TD>
   [% END %]
 [% ELSE %]
-<TD ALIGN = "center">Error</FONT> </TD>
+<TD align="center">Error</TD>
 [% END %]
 </TR>
 [% END %]
 
-<TR><TD ALIGN="center"><b>Totals:</b></TD>
+<TR><TD align="center"><b>Totals:</b></TD>
 [% IF globalClicks %]
-<TD ALIGN = "center">[% numVisits %]</TD> 
+<TD align="center">[% numVisits %]</TD> 
 [% END %]
-<TD ALIGN="center">[% numSigned %]</TD>
-<TD ALIGN="center">[% numValid %]</TD>
-<TD ALIGN="center">[% numChained %]</TD>
+<TD align="center">[% numSigned %]</TD>
+<TD align="center">[% numValid %]</TD>
+<TD align="center">[% numChained %]</TD>
 
 </TABLE>
 <br/>
