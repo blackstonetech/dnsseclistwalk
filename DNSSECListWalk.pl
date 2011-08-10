@@ -246,30 +246,6 @@ sub main() {
 
 	my $testRes = Net::DNS::Resolver->new();
 
-	print OUTPUT ("<HTML><HEAD>\n");
-	print OUTPUT ("<TITLE>DNSSEC Deployment Status</TITLE></HEAD>");
-	print OUTPUT ("<BODY LANG=\"en-US\" DIR=\"LTR\"> <H1>DNSSEC Deployment Status</H1>");
-	print OUTPUT ("<p>This is the current snapshot of the state of DNSSEC deployment in a selection of domains.");
-
-	print OUTPUT ("<p>In the table below:</p>"); 
-	print OUTPUT ("<p><b>Signed</b> column indicates that the zone has DNSSEC RRs present or not (i.e. RRSIGs are returned in a response.</p>");
-	print OUTPUT ("<p><b>Status</b> column indicates whether or not the signatures are valid, or if there is some sort of error that would cause validation to fail.  Not having a signed delegation from .gov does not mean failure in this test.</p>");
-	print OUTPUT ("<p><b>Island/Chained</b> column indicates if the zone has a secure delegation (i.e. a DS RR) from its parent zone,");
-	print OUTPUT ("usually the top-level TLD or a second-level.</p>"); 
-
-	print OUTPUT ("<p><b>NOTE:</b> zones that are no longer present are the zones with <b>\"Error\"</b> in the last column.</p>");
-	print OUTPUT ("<p>Time: " . localtime() . "</p>");
-	print OUTPUT ("<TABLE BORDER=\"4\" CELLSPACING=\"4\" CELLPADDING=\"5\"> \n");
-	print OUTPUT ("<CAPTION>Zone Status</CAPTION>");
-	print OUTPUT ("<TR> <TD ALIGN = \"center\"> Zonename </TD> \n");
-	print OUTPUT ("<TD ALIGN = \"center\"> Site Visits </TD> \n") if $globalClicks;
-	print OUTPUT ("<TD ALIGN = \"center\"> Signed? </TD> \n");
-	print OUTPUT ("<TD ALIGN = \"center\"> Status </TD> \n");
-	print OUTPUT ("<TD ALIGN = \"center\"> Island or Chain? </TD> \n");
-	#print OUTPUT ("<TD ALIGN = \"center\"> PMTU Report </TD> \n");
-	print OUTPUT ("</TR> \n");
-
-
 	while (<LIST>) {
 		my ($zone) = split(/\t/, $_);
 		chomp $zone;
@@ -281,7 +257,6 @@ sub main() {
 		my $signed = 0;
 		my $valid = 0;
 
-		print OUTPUT ("<TR> <TD> " . $zone . "</TD> ");
 		if ($globalClicks) {
 			#print "globalClicks defined while processing $zone\n";
 			my $zoneVisits = '';
@@ -291,7 +266,6 @@ sub main() {
 				$zoneDetail->{'visits'} = $zoneVisits;
 				#print "zone $zone zoneVisits $zoneVisits numVisits $numVisits\n";
 			}
-			print OUTPUT ("<TD ALIGN = \"right\">$zoneVisits</FONT> </TD> \n") 
 		}
 		#DNSKEY query for signed/unsigned	
 		$testRes->dnssec(1);
@@ -339,17 +313,6 @@ sub main() {
 		$zoneDetail->{'valid'} = $valid;
 
 		$testRes->cdflag(0);
-		if ($signed eq 1) {
-			print OUTPUT ("<TD ALIGN = \"center\" BGCOLOR=\"#008000\"><FONT COLOR=\"#FFFFFF\">Signed</FONT> </TD> \n");
-			if ($valid eq 1) {
-				print OUTPUT ("<TD ALIGN = \"center\"BGCOLOR=\"#008000\"><FONT COLOR=\"#FFFFFF\">Valid</FONT> </TD> \n");
-			} else {
-				print OUTPUT ("<TD ALIGN = \"center\"BGCOLOR=\"#FF0000\"><FONT COLOR=\"#FFFFFF\"><a href=\"http://dnsviz.net/search/?d=" . $zone . "\">Error</a></FONT> </TD> \n");
-			}
-		} else {
-			print OUTPUT ("<TD ALIGN = \"center\" BGCOLOR=\"#FF0000\"><FONT COLOR=\"#FFFFFF\">Unsigned</FONT> </TD> \n");
-			print OUTPUT ("<TD ALIGN = \"center\">N/A</FONT> </TD> \n");
-		}
 		
 		#Test for Chain/Island
 		$reply = $testRes->send($zone, 'DS');
@@ -361,33 +324,12 @@ sub main() {
 				my $ansSec = $headerc->ancount;
 				if ($ansSec > 0) {
 					$zoneDetail->{'header'}{'ansSec'} = 1;
-					print OUTPUT ("<TD ALIGN = \"center\"BGCOLOR=\"#008000\"><FONT COLOR=\"#FFFFFF\">Chain</FONT> </TD> \n");
 					$numChained++;
-				}  else {
-					if ($signed == 1) {
-						print OUTPUT ("<TD ALIGN = \"center\">Island</FONT> </TD> \n");
-					} else {
-						print OUTPUT ("<TD ALIGN = \"center\">N/A</FONT> </TD> \n");
-					}
-				}
-			} else {
-				print OUTPUT ("<TD ALIGN = \"center\">Error</FONT> </TD> \n");
-			}
-		} else {
-			print OUTPUT ("<TD ALIGN = \"center\">Error</FONT> </TD> \n");
-		}
-		print OUTPUT ("</TR>\n");
+				}  
+			} 
+		} 
 		push @$zoneList, $zoneDetail;
 	}
-
-	print OUTPUT ("<TR><TD ALIGN=\"center\"><b>Totals:</b></TD>");
-	print OUTPUT ("<TD ALIGN = \"center\">" . $numVisits . " </TD> \n") if $globalClicks;
-	print OUTPUT ("<TD ALIGN=\"center\">" . $numSigned . "</TD>");
-	print OUTPUT ("<TD ALIGN=\"center\">" . $numValid . "</TD>");
-	print OUTPUT ("<TD ALIGN=\"center\">" . $numChained . "</TD>");
-
-	print OUTPUT ("</TABLE> <br> <HR> \n");
-	print OUTPUT ("<BR></P></BODY></HTML>\n");
 
 	my $pageText = render_page($zoneList,
 		$globalClicks,
@@ -396,9 +338,7 @@ sub main() {
 		$numSigned, 
 		$numVisits
 	);
-
-	print json_encode $zoneList;
-	print $pageText;
+	print OUTPUT ($pageText);
 
 	send_report($problems, $sender, $recipient, $totalErr);
 }
