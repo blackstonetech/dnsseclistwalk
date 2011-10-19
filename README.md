@@ -22,25 +22,26 @@ This script requires Perl 5 and a few Perl modules from CPAN [1]:
 * Net::DNS
 * Template::Toolkit
 
-You may install those into your system Perl installation using CPAN [1], or use
-local::lib [2] and cpanminus [3] to install those into a non-root user
-directory, as current Perl best practices [4] suggest. If you have cpanminus
+You may install those into your system Perl installation using [CPAN][1], or use
+[local::lib][2] and [cpanminus][3] to install those into a non-root user
+directory, as [current Perl best practices][4] suggest. If you have cpanminus
 installed you need only issue this command:
 
     cpanm Email::Sender Net::DNS JSON::PP Template::Toolkit
 
 See one of the many tutorial introductions to installing Perl modules as
-a non-root user [5] [6] for more information on setting this up.
+a [non-root user][5] [(and some Mac-specific info)][6] for more information on 
+setting this up.
 
 References
 ==========
 
-* [1] http://www.cpan.org/ "CPAN"
-* [2] http://search.cpan.org/~apeiron/local-lib-1.008004/lib/local/lib.pm "local::lib"
-* [3] http://search.cpan.org/~miyagawa/App-cpanminus-1.4008/lib/App/cpanminus.pm "cpanminus"
-* [4] http://search.cpan.org/~apeiron/Task-Kensho-0.31/lib/Task/Kensho.pm "Task::Kensho"
-* [5] http://perl.jonallen.info/writing/articles/install-perl-modules-without-root "Install Perl Modules Without Root"
-* [6] http://blogs.perl.org/users/peter_edwards/2011/06/installing-local-perl-and-libraries-on-mac-book-snow-leopard.html "Installing Local Perl on Show Leopard"
+[1]: http://www.cpan.org/ "CPAN"
+[2]: http://search.cpan.org/~apeiron/local-lib-1.008004/lib/local/lib.pm "local::lib"
+[3]: http://search.cpan.org/~miyagawa/App-cpanminus-1.4008/lib/App/cpanminus.pm "cpanminus"
+[4]: http://search.cpan.org/~apeiron/Task-Kensho-0.31/lib/Task/Kensho.pm "Task::Kensho"
+[5]: http://perl.jonallen.info/writing/articles/install-perl-modules-without-root "Install Perl Modules Without Root"
+[6]: http://blogs.perl.org/users/peter_edwards/2011/06/installing-local-perl-and-libraries-on-mac-book-snow-leopard.html "Installing Local Perl on Show Leopard"
 
 
 Licence
